@@ -1,6 +1,12 @@
 Slab = require 'Slab'
 Anim = require("Anim")
 inspect = require("inspect")
+lfs = require("lfs_ffi")
+file = nil
+file_attr = nil
+get_time = function()
+   return math.ceil(love.timer.getTime() * 1000)
+end
 
 lg = love.graphics
 
@@ -41,11 +47,49 @@ background_color = {55/255,70/255,73/255, 1}
 sprite_background_color = {0.6, 0.6, 0.6, 1}
 --sprite_border_color = {248/255, 26/255, 248/255, 1}
 sprite_border_color = {1, 0, 0, 1}
+reload_interval_ms = 700
+last_reload_time = nil
 
-function reload_spritesheet()
-   -- TODO: if hash(fs.read(spritesheet_path)) == oldhash then return end
+function loadImage(path)
+   -- Read image data
+   file = assert(io.open(path, "rb"))
+   local buf = file:read("*a")
+   file:close()
+
+   love.filesystem.createDirectory("animu_temp")
+
+
+   -- Write image data to temp.file
+   local new_path = love.filesystem.getSaveDirectory().."/animu_temp/temp.file"
+   file = assert(io.open(new_path, "w+b"))
+   print(file)
+   file:write(buf)
+   file:flush()
+   file:close()
+
+   return lg.newImage("animu_temp/temp.file")
+end
+
+function init_spritesheet()
+   last_reload_time = get_time()
+   file_attr = lfs.attributes(spritesheet_path)
    spritesheet = lg.newImage(spritesheet_path)
    spritesheet:setFilter("nearest", "nearest")
+end
+
+function reload_spritesheet()
+   -- Check if modified
+   local new_attr = lfs.attributes(spritesheet_path)
+   if file_attr and new_attr.modification <= file_attr.modification then
+      return false
+   end
+
+   -- Update
+   print('reloading!')
+   file_attr = new_attr
+   spritesheet = loadImage(spritesheet_path)
+   spritesheet:setFilter("nearest", "nearest")
+   return true
 end
 
 function reload_animation()
@@ -79,7 +123,7 @@ function love.load(args)
       minheight = 200,
    })
 
-   reload_spritesheet()
+   init_spritesheet()
    reload_animation()
 
    Slab.Initialize(args)
@@ -90,6 +134,7 @@ function SlabNumberInput(name, num)
 
    Slab.SameLine()
    local inp = Slab.Input(name, {
+      W = 100,
       Text = tostring(num),
       ReturnOnText = false,
       NumbersOnly = true,
@@ -104,7 +149,17 @@ end
 
 local input_focused = false
 local mouse_down = false
+local void_hovered = false
 function love.update(dt)
+   local time = get_time()
+   if last_reload_time + reload_interval_ms <= time then
+      last_reload_time = time
+      if reload_spritesheet() then
+         reload_animation()
+      end
+   end
+
+   void_hovered = Slab.IsVoidHovered()
    input_focused = false
    Slab.Update(dt)
 
@@ -124,7 +179,7 @@ function love.update(dt)
          camera_y = camera_y + camera_speed * dt
       end
    end
-   mouse_down = love.mouse.isDown(1, 2, 3)
+   --mouse_down = love.mouse.isDown(1, 2, 3) and Slab.IsVoidHovered()
 
    anim:update(dt)
 
@@ -133,6 +188,11 @@ function love.update(dt)
       Title = "Configuration",
       ConstrainPosition = true,
       NoSavedSettings = true,
+      W = 260,
+      AllowResize = true,
+      AutoSizeWindow = false,
+      AutoSizeWindowW = false,
+      AutoSizeWindowH = true,
    })
 
    -- Print spritesheet info
@@ -249,20 +309,45 @@ function love.keypressed(key)
 end
 
 function love.filedropped(dropped_file)
-   spritesheet_path = dropped_file:getFilename()
-   reload_spritesheet()
-   reload_animation()
-   -- TODO: if the filename is .txt, do loadstring(), otherwise load the image
+   local new_path = dropped_file:getFilename()
+   -- TODO: if the filename is .txt, do loadstring(), otherwise load the image   
+
+
+   if spritesheet_path ~= new_path then
+      spritesheet_path = new_path
+      file_attr = nil
+      file = nil
+      reload_spritesheet()
+      reload_animation()
+      return
+   end
+
+   if spritesheet_path == new_path then
+      if reload_spritesheet() then
+         reload_animation()
+      end
+      return
+   end
 end
 
 function love.wheelmoved(x, y)
-   local sum = (x + y)/5
-   anim_sy = anim_sy + sum
-   anim_sx = anim_sy
+   if not input_focused and void_hovered then
+      local sum = (x + y)/5
+      anim_sy = anim_sy + sum
+      anim_sx = anim_sy
+   end
+end
+
+function love.mousepressed()
+   mouse_down = Slab.IsVoidHovered()
+end
+
+function love.mousereleased()
+   mouse_down = false
 end
 
 function love.mousemoved(x, y, dx, dy)
-   if mouse_down and not input_focused then
+   if mouse_down and not input_focused and void_hovered then
       camera_x = camera_x + dx
       camera_y = camera_y + dy
    end

@@ -109,14 +109,20 @@ function Anim:init()
 
    ::finish_iter::
    if #self.quads < 1 then
-      print(inspect(self))
-      error("Anim: no quads in animation!")
+      if self.print_debug_info then
+         print(inspect(self))
+      end
+      print("Anim: no quads in animation!")
       return nil
    end
    return self
 end
 
 function Anim:update(dt)
+   if #self.quads < 1 then
+      return
+   end
+
    local conf = self.conf
    
    if conf.delay_ms < 1 then
@@ -134,6 +140,10 @@ function Anim:update(dt)
 end
 
 function Anim:draw(x, y, r, sx, sy)
+   if #self.quads < 1 then
+      return
+   end
+
    love.graphics.draw(
       self.spritesheet,
       self.quads[self.current_quad_idx],
