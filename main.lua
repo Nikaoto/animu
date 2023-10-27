@@ -58,11 +58,9 @@ function loadImage(path)
 
    love.filesystem.createDirectory("animu_temp")
 
-
    -- Write image data to temp.file
    local new_path = love.filesystem.getSaveDirectory().."/animu_temp/temp.file"
    file = assert(io.open(new_path, "w+b"))
-   print(file)
    file:write(buf)
    file:flush()
    file:close()
@@ -85,7 +83,6 @@ function reload_spritesheet()
    end
 
    -- Update
-   print('reloading!')
    file_attr = new_attr
    spritesheet = loadImage(spritesheet_path)
    spritesheet:setFilter("nearest", "nearest")
@@ -234,6 +231,7 @@ function love.update(dt)
       input_focused = input_focused or Slab.IsInputFocused(input_name)
    end
 
+   Slab.Text("")
    Slab.EndWindow()
 
    Slab.BeginWindow("controls_window", {
