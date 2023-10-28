@@ -2,28 +2,16 @@ Slab = require 'Slab'
 Anim = require("Anim")
 inspect = require("inspect")
 lfs = require("lfs_ffi")
-file = nil
-file_attr = nil
+utf8 = require("utf8")
 get_time = function()
    return math.ceil(love.timer.getTime() * 1000)
 end
 
 lg = love.graphics
 
-function pairs_alpha(t, f)
-   local a = {}
-   for n in pairs(t) do table.insert(a, n) end
-   table.sort(a, f)
-   local i = 0
-   local iter = function ()
-      i = i + 1
-      if a[i] == nil then return nil
-      else return a[i], t[a[i]]
-      end
-   end
-   return iter
-end
-
+show_help = true
+file = nil
+file_attr = nil
 spritesheet_path = "spritesheet.png"
 spritesheet = nil
 anim = nil
@@ -49,6 +37,65 @@ sprite_border_color = {1, 0, 0, 1}
 reload_interval_ms = 700
 last_reload_time = nil
 reloading_started = false
+
+-- Return dirname, basename of path
+function dir_base_name(path)
+   local p = path:gsub("\\", "/")
+                 :gsub("/$", "")
+
+   local last_slash = p:match(".*/")
+   local dirname = ""
+   local basename = ""
+
+   if not last_slash then
+      dirname = last_slash
+
+      local off = utf8.len(last_slash)
+      basename = p:sub(utf8.offset(p, off + 1))
+   else
+      basename = p
+   end
+   return dirname, basename
+end
+
+-- Get file extension from path
+function ext(path)
+  return path:match("%.[^.]*$")
+end
+
+function unix_path(path)
+   return path:gsub("\\", "/")
+end
+
+-- Serialize variable
+function ser(varname)
+   local value = _G[varname]
+   local v
+   if type(value) == "boolean" then
+      v = (value and "true" or "false")
+   elseif type(value) == "string" then
+      v = "\"" .. value .. "\""
+   elseif type(value) == "number" then
+      v = tostring(value)
+   elseif type(value) == "table" then
+      v = inspect(value)
+   end
+   return string.format("%s = %s\n", varname, v)
+end
+
+function pairs_alpha(t, f)
+   local a = {}
+   for n in pairs(t) do table.insert(a, n) end
+   table.sort(a, f)
+   local i = 0
+   local iter = function ()
+      i = i + 1
+      if a[i] == nil then return nil
+      else return a[i], t[a[i]]
+      end
+   end
+   return iter
+end
 
 function load_image(path)
    -- Read image data
@@ -101,13 +148,46 @@ function reload_animation()
 end
 
 function save_config()
-   print("anim_config = {")
+   local config_path = spritesheet_path .. ".animu.txt"
+
+   local file = io.open(config_path, "w+")
+   file:write("-- " .. config_path .. "\n")
+   file:write("-- " .. os.date() .. "\n")
+
+   -- Serialize anim_config
+   file:write("anim_config = {\n")
    for k, v in pairs_alpha(anim.conf) do
-      if type(v) == "number" or type(v) == "string" then
-         print("   " .. k .. " = " .. v .. ",")
+      local t = type(v)
+      if t == "number" or t == "string" or t == "boolean" then
+         local val = tostring(v)
+         if t == "string" then
+            val = "\"" .. val .. "\""
+         elseif t == "boolean" then
+            val = val and "true" or "false"
+         end
+         file:write("   " .. k .. " = " .. val .. ",\n")
       end
    end
-   print("}")
+   file:write("}\n")
+
+   -- Write other values
+   file:write(ser("show_help"))
+   file:write(ser("reloading_started"))
+   file:write(ser("spritesheet_path"))
+   file:write(ser("anim_x"))
+   file:write(ser("anim_y"))
+   file:write(ser("anim_sx"))
+   file:write(ser("anim_sy"))
+   file:write(ser("camera_x"))
+   file:write(ser("camera_y"))
+   file:write(ser("camera_speed"))
+   file:write(ser("background_color"))
+   file:write(ser("sprite_background_color"))
+   file:write(ser("sprite_border_color"))
+
+   file:close()
+
+   print("Saved to " .. config_path)
 end
 
 function love.load(args)
@@ -236,17 +316,19 @@ function love.update(dt)
    Slab.Text("")
    Slab.EndWindow()
 
-   Slab.BeginWindow("controls_window", {
-      X = lg.getWidth() - 300,
-      Title = "Instructions",
+   show_help = Slab.BeginWindow("controls_window", {
+      X = lg.getWidth() - 290,
+      Y = 10,
+      IsOpen = show_help,
+      Title = "Help",
       ConstrainPosition = true,
       NoSavedSettings = true,
    })
    Slab.Text("- Drag a .txt file to load config")
    Slab.Text("- Drag an image file to load animation")
    Slab.Text("- Scroll wheel/+/-/0 to resize")
-   Slab.Text("- Arrow keys to pan")
-   Slab.Text("- s to save config")
+   Slab.Text("- Arrow keys and mouse drag to pan")
+   Slab.Text("- s/Ctrl+s to save config")
    Slab.Text("- esc to quit")
    Slab.Text("- If a dragged image doesn't show up,")
    Slab.Text("  adjust the width/height in animu")
@@ -289,7 +371,6 @@ function love.keypressed(key)
       end
    
       if key == "s" then
-         print("Saving...")
          save_config()
       end
    
@@ -313,11 +394,19 @@ end
 function love.filedropped(dropped_file)
    reloading_started = true
    local new_path = dropped_file:getFilename()
-   -- TODO: if the filename is .txt, do loadstring(), otherwise load the image   
 
+   if ext(new_path) == ".txt" then
+      dofile(new_path)
+      anim.conf = anim_config
+      if reloading_started then
+         reload_spritesheet()
+      end
+      reload_animation()
+      return
+   end
 
    if spritesheet_path ~= new_path then
-      spritesheet_path = new_path
+      spritesheet_path = unix_path(new_path)
       file_attr = nil
       file = nil
       reload_spritesheet()
