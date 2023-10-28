@@ -2,12 +2,11 @@ Slab = require 'Slab'
 Anim = require("Anim")
 inspect = require("inspect")
 lfs = require("lfs_ffi")
-utf8 = require("utf8")
+
+lg = love.graphics
 get_time = function()
    return math.ceil(love.timer.getTime() * 1000)
 end
-
-lg = love.graphics
 
 show_help = true
 file = nil
@@ -38,31 +37,12 @@ reload_interval_ms = 700
 last_reload_time = nil
 reloading_started = false
 
--- Return dirname, basename of path
-function dir_base_name(path)
-   local p = path:gsub("\\", "/")
-                 :gsub("/$", "")
-
-   local last_slash = p:match(".*/")
-   local dirname = ""
-   local basename = ""
-
-   if not last_slash then
-      dirname = last_slash
-
-      local off = utf8.len(last_slash)
-      basename = p:sub(utf8.offset(p, off + 1))
-   else
-      basename = p
-   end
-   return dirname, basename
-end
-
 -- Get file extension from path
 function ext(path)
   return path:match("%.[^.]*$")
 end
 
+-- Convert to unix path style
 function unix_path(path)
    return path:gsub("\\", "/")
 end
@@ -83,6 +63,7 @@ function ser(varname)
    return string.format("%s = %s\n", varname, v)
 end
 
+-- Iterate table alphabetically
 function pairs_alpha(t, f)
    local a = {}
    for n in pairs(t) do table.insert(a, n) end
