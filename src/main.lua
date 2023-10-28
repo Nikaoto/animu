@@ -238,7 +238,7 @@ function love.update(dt)
 
    Slab.BeginWindow("controls_window", {
       X = lg.getWidth() - 300,
-      Title = "Controls",
+      Title = "Instructions",
       ConstrainPosition = true,
       NoSavedSettings = true,
    })
@@ -248,6 +248,8 @@ function love.update(dt)
    Slab.Text("- Arrow keys to pan")
    Slab.Text("- s to save config")
    Slab.Text("- esc to quit")
+   Slab.Text("- If a dragged image doesn't show up,")
+   Slab.Text("  adjust the width/height in animu")
    Slab.EndWindow()
 end
 
