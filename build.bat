@@ -40,10 +40,11 @@ copy /Y build\*.dll build_tmp\.
 copy /Y build\*.txt build_tmp\.
 
 REM Create zip package
-move build_tmp dist\animu_windows
+move build_tmp dist\animu
 cd dist
-7z a -r -tzip animu_windows.zip animu_windows
-rmdir /s /q animu_windows
+del animu_windows.zip
+7z a -r -tzip animu_windows.zip animu
+rmdir /s /q animu
 cd ..
 
 rmdir /s /q build_tmp
