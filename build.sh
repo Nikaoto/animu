@@ -1,9 +1,12 @@
 #! /bin/bash
+rm -rf build_tmp
 mkdir -p dist build_tmp
 name="animu"
 
 # Make .love
-zip -r "${name}.zip" src/
+cd src
+zip -r ../"${name}.zip" .
+cd ..
 mv "${name}.zip" "${name}.love"
 
 # Make .exe
