@@ -1,34 +1,33 @@
 local Anim = {
+   start_x = 0,
+   start_y = 0,
+   width = 64,
+   height = 64,
+   ox = nil,
+   oy = nil,
+   dir = "horiz",
+   frame_count = nil,
+   delay = 0.1,
+   delay_ms = nil,
+   print_debug_info = false,
+
    sheet_width = nil,
    sheet_height = nil,
-   print_debug_info = false,
-   conf = {
-      start_x = 0,
-      start_y = 0,
-      width = 64,
-      height = 64,
-      ox = nil,
-      oy = nil,
-      dir = "horiz",
-      frame_count = nil,
-      delay = 0.1,
-   },
    quads = nil,
    current_quad_idx = 1,
    frame_time = nil, -- How long we've been drawing the current frame 
 }
 
-function Anim:new(spritesheet, conf)
-   assert(spritesheet)
-   assert(conf and type(conf) == "table")
+function Anim:new(o)
+   assert(o and type(o) == "table")
+   assert(o.spritesheet)
 
-   local o = { spritesheet = spritesheet, conf = conf }
-   setmetatable(o.conf, { __index = self.conf })
-   setmetatable(o, self)
+   local instance = o or {}
+   setmetatable(instance, self)
    self.__index = self
 
-   o:init()
-   return o
+   instance:init()
+   return instance
 end
 
 local function min(a, b)
@@ -36,35 +35,35 @@ local function min(a, b)
 end
 
 function Anim:init()
-   local conf = self.conf
-
    -- Defaults
    self.sheet_width = self.spritesheet:getWidth()
    self.sheet_height = self.spritesheet:getHeight()
-   conf.width = min(conf.width, self.sheet_width)
-   conf.height = min(conf.height, self.sheet_height)
-
+   self.width = min(self.width, self.sheet_width)
+   self.height = min(self.height, self.sheet_height)
+   if not rawget(self, "delay") and rawget(self, "delay_ms") then
+      self.delay = self.delay_ms / 1000
+   end
    self.current_quad_idx = 1
    self.frame_time = 0
-   self.ox = math.ceil(conf.ox or conf.width/2)
-   self.oy = math.ceil(conf.oy or conf.height/2)
+   self.ox = math.ceil(self.ox or self.width/2)
+   self.oy = math.ceil(self.oy or self.height/2)
 
-   if conf.dir ~= "horiz" and conf.dir ~= "vert" then
+   if self.dir ~= "horiz" and self.dir ~= "vert" then
       print("Anim: dir can only be \"horiz\" or \"vert\"")
-      conf.dir = "horiz"
+      self.dir = "horiz"
    end
 
-   if conf.frame_count < 1 then
+   if self.frame_count < 1 then
       print("Anim: frame_count < 1")
       return nil
    end
 
-   if conf.start_x > self.sheet_width then
+   if self.start_x > self.sheet_width then
       print("Anim: start_x > sheet_width")
       return nil
    end
 
-   if conf.start_y > self.sheet_height then
+   if self.start_y > self.sheet_height then
       print("Anim: start_y > sheet_width")
       return nil
    end
@@ -75,37 +74,37 @@ function Anim:init()
    -- Populate quads array
    self.quads = {}
    local f = 0
-   if conf.dir == "horiz" then
-      for y=conf.start_y, sheet_height, conf.height do
-         for x=conf.start_x, sheet_width, conf.width do
-            if x + conf.width <= sheet_width and
-               y + conf.height <= sheet_height then
+   if self.dir == "horiz" then
+      for y=self.start_y, sheet_height, self.height do
+         for x=self.start_x, sheet_width, self.width do
+            if x + self.width <= sheet_width and
+               y + self.height <= sheet_height then
                table.insert(self.quads, love.graphics.newQuad(
                   x, y,
-                  conf.width, conf.height,
+                  self.width, self.height,
                   sheet_width, sheet_height
                ))
 
                f = f + 1
-               if f >= conf.frame_count then
+               if f >= self.frame_count then
                   goto finish_iter
                end
             end
          end
       end
-   elseif conf.dir == "vert" then
-      for x=conf.start_x, sheet_width, conf.width do
-         for y=conf.start_y, sheet_height, conf.height do
-            if x + conf.width <= sheet_width and
-               y + conf.height <= sheet_height then
+   elseif self.dir == "vert" then
+      for x=self.start_x, sheet_width, self.width do
+         for y=self.start_y, sheet_height, self.height do
+            if x + self.width <= sheet_width and
+               y + self.height <= sheet_height then
                table.insert(self.quads, love.graphics.newQuad(
                   x, y,
-                  conf.width, conf.height,
+                  self.width, self.height,
                   sheet_width, sheet_height
                ))
 
                f = f + 1
-               if f >= conf.frame_count then
+               if f >= self.frame_count then
                   goto finish_iter
                end
             end
@@ -128,17 +127,14 @@ function Anim:update(dt)
    if #self.quads < 1 then
       return
    end
-
-   local conf = self.conf
    
-   if conf.delay <= 0 then
+   if self.delay <= 0 then
       return
    end
 
    self.frame_time = self.frame_time + dt
-   if self.frame_time > conf.delay then
-      print(self.frame_time)
-      self.frame_time = self.frame_time - conf.delay
+   if self.frame_time > self.delay then
+      self.frame_time = self.frame_time - self.delay
       self.current_quad_idx = self.current_quad_idx + 1
       if self.current_quad_idx > #self.quads then
          self.current_quad_idx = 1

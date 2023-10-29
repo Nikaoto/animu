@@ -12,9 +12,9 @@ show_help = true
 file = nil
 file_attr = nil
 spritesheet_path = "spritesheet.png"
-spritesheet = nil
 anim = nil
 anim_config = {
+   spritesheet = nil,
    start_x = 0,
    start_y = 0,
    width = 72,
@@ -34,7 +34,7 @@ background_color = {55/255,70/255,73/255, 1}
 sprite_background_color = {0.6, 0.6, 0.6, 1}
 sprite_border_color = {1, 0, 0, 1}
 reload_interval_ms = 700
-last_reload_time = nil
+last_reload_time = 0
 reloading_started = false
 
 -- Get file extension from path
@@ -99,33 +99,36 @@ end
 function init_spritesheet()
    last_reload_time = get_time()
    file_attr = lfs.attributes(spritesheet_path)
-   spritesheet = lg.newImage(spritesheet_path)
-   spritesheet:setFilter("nearest", "nearest")
+   anim_config.spritesheet = lg.newImage(spritesheet_path)
+   anim_config.spritesheet:setFilter("nearest", "nearest")
 end
 
-function reload_spritesheet()
-   -- Check if modified
+function reload_spritesheet(force)
    local new_attr = lfs.attributes(spritesheet_path)
-   if file_attr and new_attr.modification <= file_attr.modification then
-      return false
+   if not force then
+      -- Check if modified
+      if file_attr and new_attr.modification <= file_attr.modification then
+         return false
+      end
    end
 
    -- Update
    file_attr = new_attr
-   spritesheet = load_image(spritesheet_path)
-   spritesheet:setFilter("nearest", "nearest")
+   anim_config.spritesheet = load_image(spritesheet_path)
+   anim_config.spritesheet:setFilter("nearest", "nearest")
    return true
 end
 
-function reload_animation()
-   local conf
-   if anim and anim.conf then
-      conf = anim.conf
-   else
-      conf = anim_config
-   end
+function shallow_copy(t)
+  local t2 = {}
+  for k,v in pairs(t) do
+    t2[k] = v
+  end
+  return t2
+end
 
-   anim = Anim:new(spritesheet, conf)
+function reload_animation()
+   anim = Anim:new(shallow_copy(anim_config))
 end
 
 function save_config()
@@ -137,7 +140,7 @@ function save_config()
 
    -- Serialize anim_config
    file:write("anim_config = {\n")
-   for k, v in pairs_alpha(anim.conf) do
+   for k, v in pairs_alpha(anim_config) do
       local t = type(v)
       if t == "number" or t == "string" or t == "boolean" then
          local val = tostring(v)
@@ -218,13 +221,13 @@ function love.update(dt)
          end
       end
    end
-
+   anim:update(dt)
    void_hovered = Slab.IsVoidHovered()
    input_focused = false
    Slab.Update(dt)
 
-   anim_x = (lg.getWidth() - anim.conf.width)/2
-   anim_y = (lg.getHeight() - anim.conf.height)/2
+   anim_x = (lg.getWidth() - anim.width)/2
+   anim_y = (lg.getHeight() - anim.height)/2
 
    -- Camera controls
    if not input_focused then
@@ -239,9 +242,6 @@ function love.update(dt)
          camera_y = camera_y + camera_speed * dt
       end
    end
-   --mouse_down = love.mouse.isDown(1, 2, 3) and Slab.IsVoidHovered()
-
-   anim:update(dt)
 
    Slab.BeginWindow('config_window', {
       X = 10, Y = 10,
@@ -261,37 +261,38 @@ function love.update(dt)
    Slab.Text("Sheet height: " .. anim.sheet_height)
 
    -- Print config
-   for k, v in pairs_alpha(anim.conf) do
-      local input_name = k .. "_input"
-      Slab.Text(k .. ": ")
-      Slab.SameLine()
-      if type(v) == "number" then
-         local minus, inp, plus = SlabNumberInput(input_name, v)
-         if inp then
-            anim.conf[k] = tonumber(Slab.GetInputText())
-            anim:init()
+   for k, v in pairs_alpha(anim_config) do
+      local t = type(v)
+      if t == "number" or t == "string" then
+         local input_name = k .. "_input"
+         Slab.Text(k .. ": ")
+         Slab.SameLine()
+         if t == "number" then
+            local minus, inp, plus = SlabNumberInput(input_name, v)
+            if inp then
+               anim_config[k] = tonumber(Slab.GetInputText())
+               reload_animation()
+            elseif minus then
+               anim_config[k] = anim_config[k] - 1
+               reload_animation()
+            elseif plus then
+               anim_config[k] = anim_config[k] + 1
+               reload_animation()
+            end
+         elseif t == "string" then
+            local inp = Slab.Input(input_name, {
+               Text = tostring(v),
+               ReturnOnText = false,
+               NumbersOnly = false,
+            })
+            if inp then
+               anim_config[k] = Slab.GetInputText()
+               reload_animation()
+            end
          end
-         if minus then
-            anim.conf[k] = anim.conf[k] - 1
-            anim:init()
-         end
-         if plus then
-            anim.conf[k] = anim.conf[k] + 1
-            anim:init()
-         end
-      else
-         local inp = Slab.Input(input_name, {
-            Text = tostring(v),
-            ReturnOnText = false,
-            NumbersOnly = false,
-         })
-         if inp then
-            anim.conf[k] = Slab.GetInputText()
-            anim:init()
-         end
-      end
 
       input_focused = input_focused or Slab.IsInputFocused(input_name)
+      end
    end
 
    Slab.Text("")
@@ -321,10 +322,10 @@ function love.draw()
    lg.setColor(sprite_background_color)
    lg.rectangle(
       "fill",
-      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.conf.width,
-      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.conf.height,
-      anim.conf.width * anim_sx,
-      anim.conf.height * anim_sy
+      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.width,
+      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.height,
+      anim.width * anim_sx,
+      anim.height * anim_sy
    )
    -- Draw animation
    lg.setColor(1, 1, 1, 1)
@@ -334,10 +335,10 @@ function love.draw()
    lg.setColor(sprite_border_color)
    lg.rectangle(
       "line",
-      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.conf.width,
-      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.conf.height,
-      anim.conf.width * anim_sx,
-      anim.conf.height * anim_sy
+      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.width,
+      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.height,
+      anim.width * anim_sx,
+      anim.height * anim_sy
    )
 
    -- Draw UI
@@ -378,9 +379,10 @@ function love.filedropped(dropped_file)
 
    if ext(new_path) == ".txt" then
       dofile(new_path)
-      anim.conf = anim_config
       if reloading_started then
-         reload_spritesheet()
+         reload_spritesheet(true)
+      else
+         init_spritesheet()
       end
       reload_animation()
       return
