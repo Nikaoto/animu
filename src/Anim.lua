@@ -11,7 +11,7 @@ local Anim = {
       oy = nil,
       dir = "horiz",
       frame_count = nil,
-      delay_ms = 100,
+      delay = 0.1,
    },
    quads = nil,
    current_quad_idx = 1,
@@ -31,10 +31,19 @@ function Anim:new(spritesheet, conf)
    return o
 end
 
+local function min(a, b)
+   return a < b and a or b
+end
+
 function Anim:init()
    local conf = self.conf
 
    -- Defaults
+   self.sheet_width = self.spritesheet:getWidth()
+   self.sheet_height = self.spritesheet:getHeight()
+   conf.width = min(conf.width, self.sheet_width)
+   conf.height = min(conf.height, self.sheet_height)
+
    self.current_quad_idx = 1
    self.frame_time = 0
    self.ox = math.ceil(conf.ox or conf.width/2)
@@ -49,9 +58,6 @@ function Anim:init()
       print("Anim: frame_count < 1")
       return nil
    end
-
-   self.sheet_width = self.spritesheet:getWidth()
-   self.sheet_height = self.spritesheet:getHeight()
 
    if conf.start_x > self.sheet_width then
       print("Anim: start_x > sheet_width")
@@ -125,17 +131,18 @@ function Anim:update(dt)
 
    local conf = self.conf
    
-   if conf.delay_ms < 1 then
+   if conf.delay <= 0 then
       return
    end
 
-   self.frame_time = self.frame_time + dt * 1000
-   if self.frame_time > conf.delay_ms then
+   self.frame_time = self.frame_time + dt
+   if self.frame_time > conf.delay then
+      print(self.frame_time)
+      self.frame_time = self.frame_time - conf.delay
       self.current_quad_idx = self.current_quad_idx + 1
       if self.current_quad_idx > #self.quads then
          self.current_quad_idx = 1
       end
-      self.frame_time = 0
    end
 end
 
