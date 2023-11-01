@@ -458,15 +458,17 @@ else
             };
         ]]
     else
-        dirent_def = [[
-            struct dirent {
-                int64_t           d_ino;
-                size_t           d_off;
-                unsigned short  d_reclen;
-                unsigned char   d_type;
-                char            d_name[256];
-            };
-        ]]
+        -- NOTE(nikaoto): Uncommented to prevent collision with Slab's dirent
+        dirent_def = ""
+        -- dirent_def = [[
+        --     struct dirent {
+        --         int64_t           d_ino;
+        --         size_t           d_off;
+        --         unsigned short  d_reclen;
+        --         unsigned char   d_type;
+        --         char            d_name[256];
+        --     };
+        -- ]]
     end
     ffi.cdef(dirent_def .. [[
         typedef struct  __dirstream DIR;
