@@ -36,6 +36,7 @@ end
 
 function Anim:init()
    -- Defaults
+   self.quads = {}
    self.sheet_width = self.spritesheet:getWidth()
    self.sheet_height = self.spritesheet:getHeight()
    self.width = min(self.width, self.sheet_width)
@@ -72,7 +73,6 @@ function Anim:init()
    local sheet_height = self.sheet_height
 
    -- Populate quads array
-   self.quads = {}
    local f = 0
    if self.dir == "horiz" then
       for y=self.start_y, sheet_height, self.height do
