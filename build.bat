@@ -4,8 +4,8 @@ REM 'build_tmp' is the temporary working dir
 REM 'dist' is the dir of the final package
 
 setlocal enabledelayedexpansion
-mkdir /p dist
-mkdir /p build_tmp
+mkdir dist
+mkdir build_tmp
 
 where 7z.exe >nul 2>&1
 if errorlevel 1 (
