@@ -310,10 +310,9 @@ function love.update(dt)
    Slab.Text("- Drag an image file to load animation")
    Slab.Text("- Scroll wheel/+/-/0 to resize")
    Slab.Text("- Arrow keys and mouse drag to pan")
+   Slab.Text("- r to reset camera and zoom")
    Slab.Text("- s/Ctrl+s to save config")
    Slab.Text("- esc to quit")
-   Slab.Text("- If a dragged image doesn't show up,")
-   Slab.Text("  adjust the width/height in animu")
    Slab.EndWindow()
 end
 
@@ -352,6 +351,13 @@ function love.keypressed(key)
          love.event.quit()
       end
    
+      if key == "r" then
+         camera_x = 0
+         camera_y = 0
+         anim_sx = 1
+         anim_sy = 1
+      end
+
       if key == "s" then
          save_config()
       end
