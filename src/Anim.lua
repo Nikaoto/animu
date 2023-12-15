@@ -5,6 +5,8 @@ local Anim = {
    height = 64,
    ox = nil,
    oy = nil,
+   sx = 1,
+   sy = 1,
    dir = "horiz",
    frame_count = nil,
    delay = 0.1,
@@ -46,8 +48,8 @@ function Anim:init()
    end
    self.current_quad_idx = 1
    self.frame_time = 0
-   self.ox = math.ceil(self.ox or self.width/2)
-   self.oy = math.ceil(self.oy or self.height/2)
+   self.ox = self.ox or self.width/2
+   self.oy = self.oy or self.height/2
 
    if self.dir ~= "horiz" and self.dir ~= "vert" then
       print("Anim: dir can only be \"horiz\" or \"vert\"")
@@ -142,6 +144,17 @@ function Anim:update(dt)
    end
 end
 
+-- (cx, cy) is the center point
+function Anim:draw_centered(cx, cy, r, sx, sy)
+   self:draw(cx - self.ox, cy - self.oy, r, sx, sy)
+end
+
+-- (cx, by) is the bottom-center point
+function Anim:draw_bottom_centered(cx, by, r, sx, sy)
+   self:draw(cx - self.ox, by + self.oy, r, sx, sy)
+end
+
+-- (x, y) is the top-left point
 function Anim:draw(x, y, r, sx, sy)
    if #self.quads < 1 then
       return
@@ -153,8 +166,8 @@ function Anim:draw(x, y, r, sx, sy)
       x + self.ox,
       y + self.oy,
       r or 0,
-      sx or 1,
-      sy or 1,
+      sx or self.sx,
+      sy or self.sy,
       self.ox,
       self.oy)
 
