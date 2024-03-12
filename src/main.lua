@@ -1,7 +1,7 @@
-lfs = require("lfs_ffi")
-Slab = require 'Slab'
-Anim = require("Anim")
 inspect = require("inspect")
+lfs = require("lfs_ffi")
+Slab = require("Slab")
+Anim = require("Anim")
 
 lg = love.graphics
 get_time = function()
@@ -411,6 +411,7 @@ end
 function love.wheelmoved(x, y)
    if not input_focused and void_hovered then
       local sum = (x + y)/5
+      sum = sum * anim_sy * 0.5
       anim_sy = anim_sy + sum
       anim_sx = anim_sy
    end
