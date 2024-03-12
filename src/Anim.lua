@@ -5,9 +5,12 @@ local Anim = {
    height = 64,
    ox = nil,
    oy = nil,
+   off_x = 0,
+   off_y = 0,
    sx = 1,
    sy = 1,
-   dir = "horiz",
+   dir = "horiz", -- horiz/vert
+   origin = "cc", -- bc/cc/tc/tl/tr
    frame_count = nil,
    delay = 0.1,
    delay_ms = nil,
@@ -17,7 +20,7 @@ local Anim = {
    sheet_height = nil,
    quads = nil,
    current_quad_idx = 1,
-   frame_time = nil, -- How long we've been drawing the current frame 
+   frame_time = nil, -- How long we've been drawing the current frame
 }
 
 function Anim:new(o)
@@ -48,8 +51,26 @@ function Anim:init()
    end
    self.current_quad_idx = 1
    self.frame_time = 0
-   self.ox = self.ox or self.width/2
-   self.oy = self.oy or self.height/2
+
+   if not self.origin or self.origin == "cc" then
+      self.ox = self.ox or self.width/2
+      self.oy = self.oy or self.height/2
+   elseif self.origin == "tl" then
+      self.ox = 0
+      self.oy = 0
+   elseif self.origin == "tr" then
+      self.ox = self.wdith
+      self.oy = 0
+   elseif self.origin == "tc" then
+      self.ox = self.width/2
+      self.oy = 0
+   elseif self.origin == "bc" then
+      self.ox = self.width/2
+      self.oy = self.height
+   elseif self.origin == "cr" then
+      self.ox = self.width
+      self.oy = self.height/2
+   end
 
    if self.dir ~= "horiz" and self.dir ~= "vert" then
       print("Anim: dir can only be \"horiz\" or \"vert\"")
@@ -120,8 +141,16 @@ function Anim:init()
          print(inspect(self))
       end
       print("Anim: no quads in animation!")
+      print(debug.traceback())
       return nil
    end
+   return self
+end
+
+-- Set the internal scale
+function Anim:scale(sx, sy)
+   self.sx = sx
+   self.sy = sy
    return self
 end
 
@@ -144,38 +173,48 @@ function Anim:update(dt)
    end
 end
 
--- (cx, cy) is the center point
-function Anim:draw_centered(cx, cy, r, sx, sy)
-   self:draw(cx - self.ox, cy - self.oy, r, sx, sy)
+function Anim:get_rect(x, y, sx, sy)
+   local tsx = self.sx * (sx or 1)
+   local tsy = self.sy * (sy or 1)
+
+   return
+      x + (self.off_x * tsx),
+      y + (self.off_y * tsy),
+      self.width * tsx,
+      self.height * tsy
 end
 
--- (cx, by) is the bottom-center point
-function Anim:draw_bottom_centered(cx, by, r, sx, sy)
-   self:draw(cx - self.ox, by + self.oy, r, sx, sy)
-end
-
--- (x, y) is the top-left point
-function Anim:draw(x, y, r, sx, sy)
+function Anim:draw(x, y, r, sx, sy, kx, ky)
    if #self.quads < 1 then
       return
    end
 
+   kx = kx or 0
+   ky = ky or 0
+   local tsx = self.sx * (sx or 1)
+   local tsy = self.sy * (sy or 1)
+
    love.graphics.draw(
       self.spritesheet,
       self.quads[self.current_quad_idx],
-      x + self.ox,
-      y + self.oy,
+      x + tsx * self.off_x,
+      y + tsy * self.off_y,
       r or 0,
-      sx or self.sx,
-      sy or self.sy,
+      tsx,
+      tsy,
       self.ox,
-      self.oy)
+      self.oy,
+      kx,
+      ky
+   )
 
    if self.print_debug_info then
       love.graphics.print('frame idx: ' .. self.current_quad_idx, x, y)
       love.graphics.print('\nframe time: ' .. self.frame_time, x, y)
    end
 end
+
+Anim.draw_centered = Anim.draw
 
 function Anim:reset()
    self.current_quad_idx = 1
