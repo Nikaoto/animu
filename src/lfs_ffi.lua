@@ -445,7 +445,8 @@ else
         return nil, errno()
     end
 
-    local dirent_def
+    local dirent_def = ""
+    -- NOTE(nikaoto): Commented to prevent collision with Slab's dirent
     if OS == 'OSX' or OS == 'BSD' then
         dirent_def = [[
             /* _DARWIN_FEATURE_64_BIT_INODE is NOT defined here? */
@@ -458,18 +459,17 @@ else
             };
         ]]
     else
-        -- NOTE(nikaoto): Uncommented to prevent collision with Slab's dirent
-        dirent_def = ""
-        -- dirent_def = [[
-        --     struct dirent {
-        --         int64_t           d_ino;
-        --         size_t           d_off;
-        --         unsigned short  d_reclen;
-        --         unsigned char   d_type;
-        --         char            d_name[256];
-        --     };
-        -- ]]
+        dirent_def = [[
+            struct dirent {
+                int64_t           d_ino;
+                size_t           d_off;
+                unsigned short  d_reclen;
+                unsigned char   d_type;
+                char            d_name[256];
+            };
+        ]]
     end
+   
     ffi.cdef(dirent_def .. [[
         typedef struct  __dirstream DIR;
         DIR *opendir(const char *name);

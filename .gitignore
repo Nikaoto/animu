@@ -1,3 +1,4 @@
 dist/*
 build_tmp/
 *.animu.txt
+.DS_Store

@@ -1,7 +1,7 @@
+lfs = require("lfs_ffi")
 Slab = require 'Slab'
 Anim = require("Anim")
 inspect = require("inspect")
-lfs = require("lfs_ffi")
 
 lg = love.graphics
 get_time = function()

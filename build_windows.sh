@@ -6,8 +6,6 @@ export DIST_DIR="dist"
 export BUILD_DIR="build/windows"
 
 WIN_DIST_DIR="${DIST_DIR}/${GAME_NAME}_windows"
-echo "Using Windows build files: ${BUILD_DIR}"
-echo "Building Windows package: ${WIN_DIST_DIR}"
 
 ./build_love.sh
 
@@ -29,5 +27,5 @@ cd "$DIST_DIR"
 zip -q -r "${GAME_NAME}_windows.zip" "${GAME_NAME}_windows"
 cd ..
 
-echo "Windows package built: dist/Gnomber_windows/"
-echo "Windows package built: dist/Gnomber_windows.zip"
+echo "Windows package built: ${WIN_DIST_DIR}/"
+echo "Windows package built: ${DIST_DIR}/${GAME_NAME}_windows.zip"

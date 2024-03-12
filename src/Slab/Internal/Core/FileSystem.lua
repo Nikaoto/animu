@@ -177,15 +177,6 @@ else
 
 	if FFI.os == "OSX" then
 		FFI.cdef[[
-			struct dirent {
-				uint64_t	d_ino;
-				uint64_t	d_off;
-				uint16_t	d_reclen;
-				uint16_t	d_namlen;
-				uint8_t		d_type;
-				char		d_name[1024];
-			};
-
 			struct stat {
 				uint32_t	st_dev;
 				uint16_t	st_mode;
