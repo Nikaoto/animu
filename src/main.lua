@@ -175,6 +175,9 @@ function save_config()
 end
 
 function love.load(args)
+   normal_cursor = love.mouse.getSystemCursor("arrow")
+   drag_cursor = love.mouse.getSystemCursor("sizeall")
+
    lg.setBackgroundColor(background_color)
    love.window.setTitle("animu - animation preview tool")
    love.window.setDisplaySleepEnabled(true)
@@ -421,10 +424,14 @@ end
 
 function love.mousepressed()
    mouse_down = Slab.IsVoidHovered()
+   if mouse_down then
+      love.mouse.setCursor(drag_cursor)
+   end
 end
 
 function love.mousereleased()
    mouse_down = false
+   love.mouse.setCursor(normal_cursor)
 end
 
 function love.mousemoved(x, y, dx, dy)
