@@ -22,6 +22,7 @@ anim_config = {
    dir = "horiz",
    frame_count = 2,
    delay_ms = 300,
+   origin = "cc",
 }
 anim_x = 0
 anim_y = 0
@@ -320,28 +321,21 @@ function love.update(dt)
 end
 
 function love.draw()
+   local x = camera_x + anim_x
+   local y = camera_y + anim_y
+   local rx, ry, rw, rh = anim:get_rect(x, y, anim_sx, anim_sy)
+
    -- Draw animation background
    lg.setColor(sprite_background_color)
-   lg.rectangle(
-      "fill",
-      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.width,
-      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.height,
-      anim.width * anim_sx,
-      anim.height * anim_sy
-   )
+   lg.rectangle("fill", rx, ry, rw, rh)
+
    -- Draw animation
    lg.setColor(1, 1, 1, 1)
-   anim:draw(camera_x + anim_x, camera_y + anim_y, 0, anim_sx, anim_sy)
+   anim:draw(x, y, 0, anim_sx, anim_sy)
 
    -- Draw animation border
    lg.setColor(sprite_border_color)
-   lg.rectangle(
-      "line",
-      camera_x + anim_x - (anim_sx-1) * 0.5 * anim.width,
-      camera_y + anim_y - (anim_sy-1) * 0.5 * anim.height,
-      anim.width * anim_sx,
-      anim.height * anim_sy
-   )
+   lg.rectangle("line", rx, ry, rw, rh)
 
    -- Draw UI
    lg.setColor(1, 1, 1, 1)

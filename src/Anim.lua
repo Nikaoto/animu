@@ -178,8 +178,8 @@ function Anim:get_rect(x, y, sx, sy)
    local tsy = self.sy * (sy or 1)
 
    return
-      x + (self.off_x * tsx),
-      y + (self.off_y * tsy),
+      x - (self.ox * tsx) + (self.off_x * tsx),
+      y - (self.oy * tsx) + (self.off_y * tsy),
       self.width * tsx,
       self.height * tsy
 end
