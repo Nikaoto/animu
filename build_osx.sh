@@ -27,7 +27,7 @@ sed -i="" "s/_Game_Name/${OSX_BUNDLE_NAME}/g" \
 
 # Zip it
 cd "$DIST_DIR"
-tar zcf "${GAME_NAME}_osx.app.tar.gz" "${GAME_NAME}_osx"
+tar zcf "${GAME_NAME}_osx.tar.gz" "${GAME_NAME}_osx"
 
 echo "OSX package built: ${OSX_DIST_DIR}"
-echo "OSX package built: ${OSX_DIST_DIR}.app.tar.gz"
+echo "OSX package built: ${OSX_DIST_DIR}.tar.gz"
