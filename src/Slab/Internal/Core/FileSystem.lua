@@ -176,6 +176,8 @@ else
 	]]
 
 	if FFI.os == "OSX" then
+                -- NOTE(nikaoto): Removed struct dirent from cdef because it
+                -- clashed with lfs_ffi dirent.
 		FFI.cdef[[
 			struct stat {
 				uint32_t	st_dev;
