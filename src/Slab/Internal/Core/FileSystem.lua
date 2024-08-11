@@ -175,7 +175,7 @@ else
 		int closedir(DIR* dirp);
 	]]
 
-	if FFI.os == "OSX" then
+	if FFI.os == "OSX" or FFI.os == "Linux" then
                 -- NOTE(nikaoto): Removed struct dirent from cdef because it
                 -- clashed with lfs_ffi dirent.
 		FFI.cdef[[
